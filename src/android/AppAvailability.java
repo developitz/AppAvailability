@@ -2,6 +2,7 @@ package com.ohh2ahh.appavailability;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
+import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -18,28 +19,26 @@ public class AppAvailability extends CordovaPlugin {
         }
         return false;
     }
-    
-    // Thanks to http://floresosvaldo.com/android-cordova-plugin-checking-if-an-app-exists
-    public boolean appInstalled(String uri) {
-        Context ctx = this.cordova.getActivity().getApplicationContext();
-        final PackageManager pm = ctx.getPackageManager();
-        boolean app_installed = false;
-        try {
-            pm.getPackageInfo(uri, PackageManager.GET_ACTIVITIES);
-            app_installed = true;
-        }
-        catch(PackageManager.NameNotFoundException e) {
-            app_installed = false;
-        }
-        return app_installed;
-    }
-    
-    private void checkAvailability(String uri, CallbackContext callbackContext) {
-        if(appInstalled(uri)) {
-            callbackContext.success();
-        }
-        else {
-            callbackContext.error("");
-        }
+    private void checkAvailability(String uri, CallbackContext callbackContext) throws JSONException {
+            Context ctx = this.cordova.getActivity().getApplicationContext();
+            PackageManager packageManager = this.cordova.getActivity().getPackageManager();
+            boolean app_installed = false;
+            JSONObject appData = new JSONObject();
+            JSONObject versionJson = new JSONObject();
+            try {
+                String[] version = packageManager.getPackageInfo(uri, 0).versionName.split(" ");
+                String[] versionDetails = version[0].split("\\.");
+                versionJson.put("major", Integer.parseInt(versionDetails[0]));
+                versionJson.put("minor", Integer.parseInt(versionDetails[1]));
+                versionJson.put("revision", Integer.parseInt(versionDetails[2]));
+                appData.put("versionName", packageManager.getPackageInfo(uri, 0).versionName);
+                appData.put("versionCode", packageManager.getPackageInfo(uri, 0).versionCode);
+                appData.put("versionDetails", versionJson);
+                callbackContext.success(appData);
+            }
+            catch(PackageManager.NameNotFoundException e) {
+                callbackContext.error("");
+            }
+
     }
 }
